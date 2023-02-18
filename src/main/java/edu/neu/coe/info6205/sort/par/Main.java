@@ -19,32 +19,53 @@ public class Main {
     public static void main(String[] args) {
         processArgs(args);
         System.out.println("Degree of parallelism: " + ForkJoinPool.getCommonPoolParallelism());
+
+        int[] arrayLen = { 524288, 1048576, 2097152, 4194304 };
+        ForkJoinPool forkPool;
+
+        int[] threadCount = { 2, 4, 8, 16, 32 };
         Random random = new Random();
-        int[] array = new int[2000000];
-        ArrayList<Long> timeList = new ArrayList<>();
-        for (int j = 50; j < 100; j++) {
-            ParSort.cutoff = 10000 * (j + 1);
-            // for (int i = 0; i < array.length; i++) array[i] = random.nextInt(10000000);
-            long time;
-            long startTime = System.currentTimeMillis();
-            for (int t = 0; t < 10; t++) {
-                for (int i = 0; i < array.length; i++) array[i] = random.nextInt(10000000);
-                ParSort.sort(array, 0, array.length);
+        int[] array;
+        ArrayList<Long> timesList = new ArrayList<>();
+
+        for (int l = 0; l < arrayLen.length; l++) {
+            int length = arrayLen[l];
+            array = new int[length];
+
+            int[] cutoffLen = { length / 1024 + 1, length / 512 + 1, length / 256 + 1, length / 128 + 1,
+                    length / 64 + 1, length / 32 + 1, length / 16 + 1, length / 8 + 1, length / 4 + 1,
+                    length / 2 + 1, length + 1 };
+
+            System.out.println("Array length is " + arrayLen[l]);
+            System.out.println();
+
+            for (int n = 0; n < threadCount.length; n++) {
+                for (int c = 0; c < cutoffLen.length; c++) {
+                    ParSort.cutoff = cutoffLen[c];
+
+                    forkPool = new ForkJoinPool(threadCount[n]);
+                    long time;
+                    long startTime = System.currentTimeMillis();
+                    for (int t = 0; t < 10; t++) {
+                        for (int i = 0; i < array.length; i++)
+                            array[i] = random.nextInt(10000000);
+                        ParSort.sort(array, 0, array.length, forkPool);
+                    }
+                    long endTime = System.currentTimeMillis();
+                    time = (endTime - startTime);
+                    timesList.add(time);
+
+                    System.out.println("cutoff：" + (ParSort.cutoff) + " Thread Count: " + threadCount[n]
+                            + "\t10times\t Time:" + time + "ms");
+                }
             }
-            long endTime = System.currentTimeMillis();
-            time = (endTime - startTime);
-            timeList.add(time);
-
-
-            System.out.println("cutoff：" + (ParSort.cutoff) + "\t\t10times Time:" + time + "ms");
-
         }
         try {
             FileOutputStream fis = new FileOutputStream("./src/result.csv");
             OutputStreamWriter isr = new OutputStreamWriter(fis);
             BufferedWriter bw = new BufferedWriter(isr);
             int j = 0;
-            for (long i : timeList) {
+            for (long i : timesList) {
                 String content = (double) 10000 * (j + 1) / 2000000 + "," + (double) i / 10 + "\n";
                 j++;
                 bw.write(content);
@@ -60,7 +81,8 @@ public class Main {
     private static void processArgs(String[] args) {
         String[] xs = args;
         while (xs.length > 0)
-            if (xs[0].startsWith("-")) xs = processArg(xs);
+            if (xs[0].startsWith("-"))
+                xs = processArg(xs);
     }
 
     private static String[] processArg(String[] xs) {
@@ -71,11 +93,12 @@ public class Main {
     }
 
     private static void processCommand(String x, String y) {
-        if (x.equalsIgnoreCase("N")) setConfig(x, Integer.parseInt(y));
+        if (x.equalsIgnoreCase("N"))
+            setConfig(x, Integer.parseInt(y));
         else
-            // TODO sort this out
-            if (x.equalsIgnoreCase("P")) //noinspection ResultOfMethodCallIgnored
-                ForkJoinPool.getCommonPoolParallelism();
+        // TODO sort this out
+        if (x.equalsIgnoreCase("P")) // noinspection ResultOfMethodCallIgnored
+            ForkJoinPool.getCommonPoolParallelism();
     }
 
     private static void setConfig(String x, int i) {
@@ -84,6 +107,5 @@ public class Main {
 
     @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
     private static final Map<String, Integer> configuration = new HashMap<>();
-
 
 }
