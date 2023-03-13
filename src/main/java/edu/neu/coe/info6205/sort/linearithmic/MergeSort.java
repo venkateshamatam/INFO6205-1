@@ -49,7 +49,8 @@ public class MergeSort<X extends Comparable<X>> extends SortWithHelper<X> {
 
     @Override
     public void sort(X[] a, int from, int to) {
-        // CONSIDER don't copy but just allocate according to the xs/aux interchange optimization
+        // CONSIDER don't copy but just allocate according to the xs/aux interchange
+        // optimization
         X[] aux = Arrays.copyOf(a, a.length);
         sort(a, aux, from, to);
     }
@@ -65,7 +66,21 @@ public class MergeSort<X extends Comparable<X>> extends SortWithHelper<X> {
         }
 
         // FIXME : implement merge sort with insurance and no-copy optimizations
-        // END 
+        final int length = to - from;
+        int middle = from + length / 2;
+        if (!noCopy) {
+            sort(aux, from, middle);
+            sort(aux, middle, to);
+        } else {
+            sort(a, from, middle);
+            sort(a, middle, to);
+            System.arraycopy(a, from, aux, from, length);
+            getHelper().incrementCopies(length);
+            getHelper().incrementHits(2 * length);
+        }
+
+        merge(aux, a, from, middle, to);
+        // END
     }
 
     // CONSIDER combine with MergeSortBasic perhaps.
@@ -74,12 +89,15 @@ public class MergeSort<X extends Comparable<X>> extends SortWithHelper<X> {
         int i = from;
         int j = mid;
         for (int k = from; k < to; k++)
-            if (i >= mid) helper.copy(sorted, j++, result, k);
-            else if (j >= to) helper.copy(sorted, i++, result, k);
+            if (i >= mid)
+                helper.copy(sorted, j++, result, k);
+            else if (j >= to)
+                helper.copy(sorted, i++, result, k);
             else if (helper.less(sorted[j], sorted[i])) {
                 helper.incrementFixes(mid - i);
                 helper.copy(sorted, j++, result, k);
-            } else helper.copy(sorted, i++, result, k);
+            } else
+                helper.copy(sorted, i++, result, k);
     }
 
     public static final String MERGESORT = "mergesort";
@@ -88,11 +106,12 @@ public class MergeSort<X extends Comparable<X>> extends SortWithHelper<X> {
 
     private static String getConfigString(Config config) {
         StringBuilder stringBuilder = new StringBuilder();
-        if (config.getBoolean(MERGESORT, INSURANCE)) stringBuilder.append(" with insurance comparison");
-        if (config.getBoolean(MERGESORT, NOCOPY)) stringBuilder.append(" with no copy");
+        if (config.getBoolean(MERGESORT, INSURANCE))
+            stringBuilder.append(" with insurance comparison");
+        if (config.getBoolean(MERGESORT, NOCOPY))
+            stringBuilder.append(" with no copy");
         return stringBuilder.toString();
     }
 
     private final InsertionSort<X> insertionSort;
 }
-
