@@ -68,15 +68,16 @@ public class MergeSort<X extends Comparable<X>> extends SortWithHelper<X> {
         // FIXME : implement merge sort with insurance and no-copy optimizations
         final int length = to - from;
         int middle = from + length / 2;
-        if (!noCopy) {
-            sort(aux, from, middle);
-            sort(aux, middle, to);
-        } else {
+        if (noCopy) {
             sort(a, from, middle);
             sort(a, middle, to);
             System.arraycopy(a, from, aux, from, length);
             getHelper().incrementCopies(length);
             getHelper().incrementHits(2 * length);
+
+        } else {
+            sort(aux, from, middle);
+            sort(aux, middle, to);
         }
 
         merge(aux, a, from, middle, to);
